@@ -140,7 +140,8 @@ const BASE=BASE_OVERRIDE||(()=>{
 const U=p=>BASE+p;
 
 const app=document.getElementById('app');
-const albums=[];
+const albums=[];   /* in file order: first line of albums.txt = oldest */
+const newest=()=>albums.slice().reverse();   /* shown newest first */
 let cur=null, idx=0;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const slug=s=>s.trim().toLowerCase().replace(/\s+/g,'-');
@@ -157,7 +158,8 @@ async function getText(url){
    albums/albums.txt   : one album file name per line
    albums/<file>.txt   : one image URL per line (first one = cover)
                          optional line:  category: Anime, Waifu
-   Albums are named automatically: Album 1, Album 2, ... in the order of albums.txt */
+   Albums are named automatically: Album 1, Album 2, ... in the order of albums.txt.
+   Top line = oldest album, bottom line = newest. The site shows the newest first. */
 const DIRECTIVE=/^#?\s*(category|categories|kategori)\s*:\s*(.*)$/i;
 function parseAlbum(text){
   const photos=[], cats=[];
@@ -213,8 +215,8 @@ function go(href){
 }
 function route(){
   const p=parts(), n=x=>Math.max(1,parseInt(x,10)||1);
-  if(!p.length) return gallery(albums,1,k=>U(k>1?'page/'+k:''),null,'');
-  if(p[0]==='page'&&p.length<=2) return gallery(albums,n(p[1]),k=>U(k>1?'page/'+k:''),null,'');
+  if(!p.length) return gallery(newest(),1,k=>U(k>1?'page/'+k:''),null,'');
+  if(p[0]==='page'&&p.length<=2) return gallery(newest(),n(p[1]),k=>U(k>1?'page/'+k:''),null,'');
   if(p[0]==='album'&&p.length<=3) return album(n(p[1]),n(p[2]));
   if(p[0]==='category'&&p[1]&&(p.length===2||(p[2]==='page'&&p.length<=4))) return category(p[1],n(p[3]));
   if(p[0]==='about'&&p.length===1) return about();
@@ -267,7 +269,7 @@ function gallery(list,page,urlFor,heading,title){
 }
 
 function category(s,page){
-  const list=albums.filter(a=>a.cats.some(c=>c.slug===s));
+  const list=newest().filter(a=>a.cats.some(c=>c.slug===s));
   if(!list.length) return notFound();
   const name=list[0].cats.find(c=>c.slug===s).name;
   gallery(list,page,k=>U('category/'+encodeURIComponent(s)+(k>1?'/page/'+k:'')),name,name+' - himitsu');
@@ -305,21 +307,43 @@ function setPlaying(v){
   if(v) arm(); else clearTimeout(timer);
 }
 
+/* downloads the original file; if the image host blocks it, the image opens in a new tab instead */
+async function download(){
+  const btn=document.getElementById('dl'), url=cur.photos[idx];
+  let name='';
+  try{name=decodeURIComponent(url.split('?')[0].split('/').pop()||'');}catch(e){}
+  if(!name) name='himitsu-'+cur.n+'-'+(idx+1)+'.jpg';
+  btn.disabled=true; btn.textContent='Downloading...';
+  try{
+    const r=await fetch(url);
+    if(!r.ok) throw new Error('http '+r.status);
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(await r.blob());
+    a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  }catch(e){
+    window.open(url,'_blank','noopener');
+  }
+  btn.disabled=false; btn.textContent='Download';
+}
+
 function album(num,photo){
   const a=albums[num-1];
   if(!a) return notFound();
   if(cur!==a){
     leave('home',a.title+' - himitsu');
     cur=a;
-    const homePage=Math.floor((num-1)/perPage())+1;
+    const homePage=Math.floor((albums.length-num)/perPage())+1;
     app.innerHTML=`<header class="bar tight">${site(U(homePage>1?'page/'+homePage:''))}</header>
 <div class="albumline"><b>${esc(a.title)}</b><span id="count"></span></div>
-<main class="photo"><div class="frame"><button class="nav prev" aria-label="Previous photo"><svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg></button><img id="photo" alt=""><button class="nav next" aria-label="Next photo"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></svg></button></div><div class="ctl"><button id="play" type="button" aria-pressed="false">Start slideshow</button></div></main>`;
+<main class="photo"><div class="frame"><button class="nav prev" aria-label="Previous photo"><svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg></button><img id="photo" alt=""><button class="nav next" aria-label="Next photo"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></svg></button></div><div class="ctl"><button id="play" type="button" aria-pressed="false">Start slideshow</button><button id="dl" type="button">Download</button></div></main>`;
     app.querySelector('.prev').onclick=()=>step(-1);
     app.querySelector('.next').onclick=()=>step(1);
     const img=document.getElementById('photo'), play=document.getElementById('play');
     img.onload=img.onerror=()=>{if(playing) arm();};
     play.onclick=()=>setPlaying(!playing);
+    document.getElementById('dl').onclick=download;
     if(a.photos.length<2) play.disabled=true;
   }
   showPhoto(photo-1);
