@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&family=Archivo:wght@800&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark;--bg:#000;--ink:#fff;--mute:#8c8c8c;--display:"Archivo","Karla",system-ui,sans-serif;--font:"Karla",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+:root{color-scheme:dark;--bg:#000;--ink:#fff;--mute:#8c8c8c;--accent:#ff7eb6;--display:"Archivo","Karla",system-ui,sans-serif;--font:"Karla",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 *{box-sizing:border-box;margin:0}
 body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 a{color:inherit}
@@ -17,34 +17,57 @@ a{color:inherit}
 .bar{position:sticky;top:0;left:0;z-index:2;width:100%;height:64px;display:flex;align-items:center;gap:24px;padding:0 20px;background:var(--bg)}
 .bar .site{font:800 clamp(34px,6vw,48px)/1 var(--display);letter-spacing:-.01em;text-decoration:none}
 .bar.big{position:static;height:auto;padding:36px 20px 28px}
+.bar.tight{padding:20px 20px 6px}
+.albumline{display:flex;align-items:baseline;gap:14px;padding:0 20px 10px}
+.albumline b{font-size:18px}
+.albumline span{color:var(--mute)}
 .bar .info{color:var(--mute)}
 
-:root{--cols:2;--ch:170px}
+:root{--cols:1;--ch:240px}
 @media (min-width:640px){:root{--cols:3;--ch:210px}}
 @media (min-width:1024px){:root{--cols:4;--ch:250px}}
 @media (min-width:1400px){:root{--cols:5;--ch:270px}}
 .covers{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:32px 20px;padding:8px 20px 32px}
 .cover{display:block;min-width:0;text-decoration:none}
-.cover .box{height:var(--ch);display:flex;align-items:center;justify-content:center}
+.cover .box{height:var(--ch);display:flex;align-items:flex-end;justify-content:center}
 .cover img{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
 .pager{display:flex;align-items:baseline;gap:24px;padding:0 20px 48px}
 .pager span{color:var(--mute)}
-.cover span{display:block;margin-top:6px}
-.cover small{color:var(--mute);font-size:inherit}
+.cover span{display:block;margin-top:8px;text-align:center}
+.cover small{color:var(--accent);font-size:inherit;font-weight:700}
 .cover:hover span{text-decoration:underline}
 
-.photo{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 64px);min-height:calc(100dvh - 64px);padding:8px 72px 24px}
-.photo img{display:block;max-width:100%;max-height:calc(100vh - 96px);max-height:calc(100dvh - 96px)}
+.photo{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 72px 24px}
+.frame{position:relative;max-width:100%}
+.photo img{display:block;max-width:100%;max-height:calc(100vh - 210px);max-height:calc(100dvh - 210px)}
 
-.nav{position:fixed;top:64px;bottom:0;width:64px;z-index:1;display:grid;place-items:center;border:0;background:none;color:#fff;mix-blend-mode:difference;font:300 44px/1 var(--font);cursor:pointer}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px 16px;color:var(--mute)}
+.ctl button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid #444;border-radius:0;padding:6px 14px;cursor:pointer}
+.ctl button:hover{border-color:var(--ink)}
+.ctl button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.ctl button:disabled{opacity:.4;cursor:default}
+.nav{position:absolute;top:50%;height:96px;margin-top:-48px;width:64px;z-index:1;display:grid;place-items:center;border:0;background:none;padding:0;cursor:pointer}
+.nav svg{width:30px;height:30px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 2px #000) drop-shadow(0 0 5px rgba(0,0,0,.8))}
 .nav:hover{opacity:.6}
-.prev{left:0}.next{right:0}
+.prev{left:-72px}.next{right:-72px}
 
 .msg{padding:24px 20px;max-width:60ch;color:var(--mute)}
 
 @media (max-width:640px){
   .photo{padding:8px 0 24px}
   .nav{width:44px}
+  .prev{left:0}.next{right:0}
+}
+@media (max-width:639px){
+  .cover .box{height:auto}
+  .cover img{max-height:var(--ch)}
+}
+@media (max-height:520px){
+  .bar.big{padding:12px 20px 2px}
+  .bar .site{font-size:28px}
+  .albumline{padding-bottom:6px}
+  .photo{padding-bottom:12px}
+  .photo img{max-height:calc(100vh - 150px);max-height:calc(100dvh - 150px)}
 }
 </style>
 </head>
@@ -83,10 +106,12 @@ async function init(){
 
 function perPage(){
   const w=innerWidth;
-  return (w>=1400?5:w>=1024?4:w>=640?3:2)*3;   /* kolom x 3 baris, sama dengan CSS */
+  if(w<640) return 5;   /* HP: 1 kolom */
+  return (w>=1400?5:w>=1024?4:3)*3;   /* kolom x 3 baris, sama dengan CSS */
 }
 
 function home(page){
+  setPlaying(false);
   cur=null;
   document.title='himitsu';
   const head='<header class="bar big"><a class="site" href="#/">himitsu</a></header>';
@@ -104,23 +129,42 @@ function home(page){
   scrollTo(0,0);
 }
 
+/* ---------- slideshow di dalam album ---------- */
+const DELAY=3;   /* detik */
+let playing=false, timer=0;
+function arm(){
+  clearTimeout(timer);
+  if(playing&&cur) timer=setTimeout(()=>step(1),DELAY*1000);
+}
+function setPlaying(v){
+  playing=v;
+  const b=document.getElementById('play');
+  if(b){b.textContent=v?'Jeda slideshow':'Mulai slideshow'; b.setAttribute('aria-pressed',v);}
+  if(v) arm(); else clearTimeout(timer);
+}
+
 function album(file,n){
   const a=albums.find(x=>x.file===file);
   if(!a) return void(location.hash='#/');
   if(!cur||cur.file!==file){
+    setPlaying(false);
     cur=a;
     document.title=a.title+' - himitsu';
-    app.innerHTML=`<header class="bar"><a href="#/halaman/${Math.floor(albums.indexOf(a)/perPage())+1}">&larr; kembali</a><span class="info">${esc(a.title)}, <span id="count"></span></span></header>
-<button class="nav prev" aria-label="Foto sebelumnya">&lsaquo;</button>
-<main class="photo"><img id="photo" alt=""></main>
-<button class="nav next" aria-label="Foto berikutnya">&rsaquo;</button>`;
+    app.innerHTML=`<header class="bar big tight"><a class="site" href="#/halaman/${Math.floor(albums.indexOf(a)/perPage())+1}">himitsu</a></header>
+<div class="albumline"><b>${esc(a.title)}</b><span id="count"></span></div>
+<main class="photo"><div class="frame"><button class="nav prev" aria-label="Foto sebelumnya"><svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg></button><img id="photo" alt=""><button class="nav next" aria-label="Foto berikutnya"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></svg></button></div><div class="ctl"><button id="play" type="button" aria-pressed="false">Mulai slideshow</button></div></main>`;
     app.querySelector('.prev').onclick=()=>step(-1);
     app.querySelector('.next').onclick=()=>step(1);
+    const img=document.getElementById('photo'), play=document.getElementById('play');
+    img.onload=img.onerror=()=>{if(playing) arm();};
+    play.onclick=()=>setPlaying(!playing);
+    if(a.photos.length<2) play.disabled=true;
   }
   showPhoto(n-1);
 }
 
 function showPhoto(i){
+  clearTimeout(timer);
   const len=cur.photos.length;
   idx=(i%len+len)%len;
   const img=document.getElementById('photo');
@@ -150,6 +194,7 @@ addEventListener('keydown',e=>{
   if(e.key==='ArrowRight') step(1);
   else if(e.key==='ArrowLeft') step(-1);
   else if(e.key==='Escape') location.hash='#/';
+  else if(e.key===' '&&e.target===document.body){e.preventDefault();setPlaying(!playing);}
 });
 
 /* swipe left/right on touch screens */
