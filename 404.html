@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0a16">
+<title>himitsu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0d0a16; --ink:#f7eefa; --mute:#9b90b3;
+  --accent:#ff8fc7; --accent2:#b79cff; --line:rgba(255,143,199,.28); --tint:rgba(255,143,199,.14);
+  --font:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --cols:1; --ch:240px; --topbar:52px;
+}
+@media (min-width:640px){:root{--cols:3;--ch:210px}}
+@media (min-width:1024px){:root{--cols:4;--ch:250px}}
+@media (min-width:1400px){:root{--cols:5;--ch:270px}}
+
+*{box-sizing:border-box;margin:0}
+html{background:var(--bg)}
+body{
+  display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;
+  padding-top:calc(var(--topbar) + env(safe-area-inset-top));
+  color:var(--ink);font:400 16px/1.5 var(--font);
+  background:
+    radial-gradient(900px 480px at 0% -8%,rgba(255,120,190,.17),transparent 62%),
+    radial-gradient(800px 480px at 100% -8%,rgba(140,110,255,.17),transparent 62%),
+    var(--bg);
+  background-repeat:no-repeat;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+#app{flex:1}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+
+/* fixed top navbar */
+.top{position:fixed;top:0;left:0;right:0;z-index:20;padding-top:env(safe-area-inset-top);background:rgba(13,10,22,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,143,199,.16)}
+.top .in{display:flex;align-items:center;gap:4px;height:var(--topbar);padding:0 12px}
+.toplink{padding:7px 14px;border-radius:999px;text-decoration:none;font-weight:500;font-size:15px;color:var(--mute)}
+.toplink:hover{color:var(--ink)}
+.toplink[aria-current=page]{color:var(--ink);background:var(--tint)}
+
+/* header */
+.bar{padding:36px 20px 28px}
+.bar.tight{padding:20px 20px 6px}
+.site{display:inline-flex;align-items:baseline;gap:14px;text-decoration:none}
+.site .word{font:900 clamp(36px,6vw,52px)/1.1 var(--font);letter-spacing:.01em;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.site .jp{font-weight:500;font-size:clamp(14px,2.2vw,18px);letter-spacing:.3em;color:var(--accent2)}
+.albumline{display:flex;align-items:center;gap:12px;padding:0 20px 10px}
+.albumline b{font-size:18px;font-weight:700}
+.albumline span{color:var(--accent);background:var(--tint);padding:1px 10px;border-radius:999px;font-size:14px;font-weight:500}
+
+/* grid */
+.covers{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:32px 20px;padding:8px 20px 32px}
+.card{min-width:0}
+.cover{display:block;text-decoration:none}
+.cover .box{height:var(--ch);display:flex;align-items:flex-end;justify-content:center}
+.cover img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;border-radius:14px;box-shadow:0 0 0 1px var(--line);transition:transform .2s,box-shadow .2s}
+.cover .cap{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 10px;margin-top:12px;font-weight:500}
+.cover small{color:var(--accent);background:var(--tint);padding:1px 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
+.cats{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:8px}
+.chip{font-size:12.5px;line-height:1.5;padding:1px 11px;border-radius:999px;border:1px solid rgba(183,156,255,.38);color:var(--accent2);text-decoration:none}
+.chip:hover{background:rgba(183,156,255,.16)}
+@media (hover:hover){
+  .cover:hover img{transform:translateY(-4px);box-shadow:0 0 0 2px var(--accent),0 12px 32px rgba(255,143,199,.25)}
+  .cover:hover .cap{color:var(--accent)}
+}
+
+.pager{display:flex;align-items:center;justify-content:center;gap:12px;padding:0 20px 40px}
+.pager a,.pager span{padding:6px 16px;border:1px solid var(--line);border-radius:999px;text-decoration:none}
+.pager a:hover{background:var(--tint)}
+.pager span{color:var(--mute);border-color:transparent}
+.pager span:first-child,.pager span:last-child{border-color:rgba(255,143,199,.12);opacity:.5}
+
+/* album viewer */
+.photo{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 72px 24px}
+.frame{position:relative;max-width:100%}
+.photo img{display:block;max-width:100%;max-height:calc(100vh - 330px);max-height:calc(100dvh - 330px);border-radius:12px;box-shadow:0 0 0 1px var(--line),0 10px 40px rgba(183,156,255,.14)}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px 16px}
+.ctl button{font:inherit;font-weight:500;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:8px 22px;cursor:pointer}
+.ctl button:hover{background:var(--tint)}
+.ctl button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#1a0b16}
+.ctl button:disabled{opacity:.4;cursor:default;background:transparent}
+.nav{position:absolute;top:50%;height:96px;margin-top:-48px;width:64px;z-index:1;display:grid;place-items:center;border:0;background:none;padding:0;cursor:pointer}
+.nav svg{width:30px;height:30px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 2px #000) drop-shadow(0 0 5px rgba(0,0,0,.8))}
+.nav:hover svg{stroke:var(--accent)}
+.prev{left:-72px}.next{right:-72px}
+
+.msg{padding:24px 20px;max-width:60ch;color:var(--mute)}
+.msg a{color:var(--accent)}
+.about{padding:8px 20px 40px;max-width:62ch}
+.about p{margin-bottom:1em;line-height:1.75}
+
+/* footer */
+.foot{padding:14px 20px calc(14px + env(safe-area-inset-bottom));text-align:center;color:var(--mute);font-size:13px;border-top:1px solid rgba(255,143,199,.12)}
+.foot b{color:var(--accent2);font-weight:700}
+
+@media (max-width:640px){
+  .photo{padding:8px 12px 24px}
+  .nav{width:44px}
+  .prev{left:0}.next{right:0}
+}
+@media (max-width:639px){
+  .cover .box{height:auto}
+  .cover img{max-height:var(--ch)}
+}
+@media (max-height:520px){
+  :root{--topbar:44px}
+  .bar,.bar.tight{padding:12px 20px 2px}
+  .site .word{font-size:28px}
+  .albumline{padding-bottom:6px}
+  .photo{padding-bottom:12px}
+  .photo img{max-height:calc(100vh - 205px);max-height:calc(100dvh - 205px)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<nav class="top" aria-label="Main">
+  <div class="in">
+    <a class="toplink" data-link data-nav="home" href="/">Home</a>
+    <a class="toplink" data-link data-nav="about" href="/about">About</a>
+  </div>
+</nav>
+<div id="app"></div>
+<footer class="foot">&copy; <span id="year">2026</span> <b>agb-777</b>. All rights reserved.</footer>
+<script>
+/* If the site lives in a sub-folder (e.g. https://user.github.io/my-repo/) and the auto-detection
+   below gets it wrong, set it by hand, e.g. const BASE_OVERRIDE='/my-repo/'; */
+const BASE_OVERRIDE=null;
+const BASE=BASE_OVERRIDE||(()=>{
+  const seg=location.pathname.split('/')[1]||'';
+  const own=['','page','album','category','about','index.html','404.html'];
+  return location.hostname.endsWith('.github.io')&&!own.includes(seg)?'/'+seg+'/':'/';
+})();
+const U=p=>BASE+p;
+
+const app=document.getElementById('app');
+const albums=[];
+let cur=null, idx=0;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const slug=s=>s.trim().toLowerCase().replace(/\s+/g,'-');
+const site=href=>`<a class="site" data-link href="${href}"><span class="word">himitsu</span><span class="jp" aria-hidden="true">秘密</span></a>`;
+
+async function getText(url){
+  const r=await fetch(url,{cache:'no-cache'});
+  if(!r.ok) throw new Error(url+' ('+r.status+')');
+  if((r.headers.get('content-type')||'').includes('text/html')) throw new Error(url+' is not a text file');
+  return r.text();
+}
+
+/* ---------- data ----------
+   albums/albums.txt   : one album file name per line
+   albums/<file>.txt   : one image URL per line (first one = cover)
+                         optional line:  category: Anime, Waifu
+   Albums are named automatically: Album 1, Album 2, ... in the order of albums.txt */
+const DIRECTIVE=/^#?\s*(category|categories|kategori)\s*:\s*(.*)$/i;
+function parseAlbum(text){
+  const photos=[], cats=[];
+  text.split(/\r?\n/).forEach(l=>{
+    l=l.trim();
+    if(!l) return;
+    const m=l.match(DIRECTIVE);
+    if(m){
+      m[2].split(',').forEach(c=>{
+        c=c.trim();
+        if(c&&!cats.some(x=>x.slug===slug(c))) cats.push({name:c,slug:slug(c)});
+      });
+      return;
+    }
+    if(l.startsWith('#')) return;
+    photos.push(l);
+  });
+  return {photos,cats};
+}
+
+async function init(){
+  document.getElementById('year').textContent=new Date().getFullYear();
+  document.querySelector('[data-nav=home]').href=U('');
+  document.querySelector('[data-nav=about]').href=U('about');
+  try{
+    const files=parseAlbum(await getText(U('albums/albums.txt'))).photos;
+    const res=await Promise.allSettled(files.map(f=>getText(U('albums/'+f))));
+    res.forEach((r,i)=>{
+      if(r.status!=='fulfilled') return;
+      const parsed=parseAlbum(r.value), cats=parsed.cats;
+      if(!parsed.photos.length) return;
+      /* local paths like img/pic.jpg are relative to the site root; full URLs are used as they are */
+      const photos=parsed.photos.map(u=>/^([a-z][a-z0-9+.-]*:|\/)/i.test(u)?u:U(u));
+      const n=albums.length+1;
+      albums.push({n,file:files[i],title:'Album '+n,photos,cats});
+    });
+    route();
+  }catch(e){
+    app.innerHTML='<p class="msg">Could not open the album list. Check that albums/albums.txt exists, and open this page through a server instead of double-clicking the file.</p>';
+  }
+}
+
+/* ---------- routing (clean URLs, no #) ----------
+   /  /page/2  /album/3  /album/3/5  /category/anime  /category/anime/page/2  /about */
+function parts(){
+  let p=location.pathname;
+  p=p.startsWith(BASE)?p.slice(BASE.length):p.replace(/^\//,'');
+  return p.replace(/index\.html$/,'').split('/').filter(Boolean).map(decodeURIComponent);
+}
+function go(href){
+  if(href!==location.pathname+location.search) history.pushState(null,'',href);
+  route();
+}
+function route(){
+  const p=parts(), n=x=>Math.max(1,parseInt(x,10)||1);
+  if(!p.length) return gallery(albums,1,k=>U(k>1?'page/'+k:''),null,'');
+  if(p[0]==='page'&&p.length<=2) return gallery(albums,n(p[1]),k=>U(k>1?'page/'+k:''),null,'');
+  if(p[0]==='album'&&p.length<=3) return album(n(p[1]),n(p[2]));
+  if(p[0]==='category'&&p[1]&&(p.length===2||(p[2]==='page'&&p.length<=4))) return category(p[1],n(p[3]));
+  if(p[0]==='about'&&p.length===1) return about();
+  return notFound();
+}
+addEventListener('popstate',route);
+document.addEventListener('click',e=>{
+  if(e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey) return;
+  const a=e.target.closest('a[data-link]');
+  if(!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href'));
+});
+
+function leave(active,title){
+  setPlaying(false);
+  cur=null;
+  document.title=title||'himitsu';
+  document.querySelectorAll('[data-nav]').forEach(a=>{
+    if(a.dataset.nav===active) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');
+  });
+}
+
+/* ---------- gallery grid (home + category) ---------- */
+function perPage(){
+  const w=innerWidth;
+  if(w<640) return 5;   /* phone: 1 column */
+  return (w>=1400?5:w>=1024?4:3)*3;   /* columns x 3 rows, same as the CSS */
+}
+
+function gallery(list,page,urlFor,heading,title){
+  leave('home',title);
+  if(!list.length){
+    app.innerHTML=`<header class="bar">${site(U(''))}</header><p class="msg">No albums yet. Add a .txt file name to albums/albums.txt.</p>`;
+    return;
+  }
+  const per=perPage(), pages=Math.ceil(list.length/per);
+  page=Math.min(Math.max(page,1),pages);
+  const items=list.slice((page-1)*per,page*per);
+  const link=(k,t)=>k<1||k>pages?`<span>${t}</span>`:`<a data-link href="${urlFor(k)}">${t}</a>`;
+  const head=heading
+    ?`<header class="bar tight">${site(U(''))}</header><div class="albumline"><b>${esc(heading)}</b><span>${list.length} album${list.length>1?'s':''}</span></div>`
+    :`<header class="bar">${site(U(''))}</header>`;
+  app.innerHTML=head+'<main class="covers">'+items.map(a=>
+    `<div class="card"><a class="cover" data-link href="${U('album/'+a.n+'/1')}"><div class="box"><img src="${esc(a.photos[0])}" alt=""></div><span class="cap">${esc(a.title)} <small>${a.photos.length} photo${a.photos.length>1?'s':''}</small></span></a>`+
+    (a.cats.length?`<div class="cats">${a.cats.map(c=>`<a class="chip" data-link href="${U('category/'+encodeURIComponent(c.slug))}">${esc(c.name)}</a>`).join('')}</div>`:'')+
+    `</div>`
+  ).join('')+'</main>'+(pages>1?`<nav class="pager" aria-label="Pages">${link(page-1,'&lsaquo; Prev')}<span>${page} of ${pages}</span>${link(page+1,'Next &rsaquo;')}</nav>`:'');
+  scrollTo(0,0);
+}
+
+function category(s,page){
+  const list=albums.filter(a=>a.cats.some(c=>c.slug===s));
+  if(!list.length) return notFound();
+  const name=list[0].cats.find(c=>c.slug===s).name;
+  gallery(list,page,k=>U('category/'+encodeURIComponent(s)+(k>1?'/page/'+k:'')),name,name+' - himitsu');
+}
+
+/* ---------- about + 404 ---------- */
+async function about(){
+  leave('about','About - himitsu');
+  app.innerHTML=`<header class="bar tight">${site(U(''))}</header><div class="albumline"><b>About</b></div><main class="about" id="aboutText"></main>`;
+  scrollTo(0,0);
+  let html;
+  try{
+    html=(await getText(U('about.txt'))).split(/\r?\n\s*\r?\n/).map(s=>s.trim()).filter(Boolean).map(s=>'<p>'+esc(s).replace(/\r?\n/g,'<br>')+'</p>').join('');
+  }catch(e){}
+  const el=document.getElementById('aboutText');
+  if(el) el.innerHTML=html||'<p>Nothing here yet.</p>';
+}
+
+function notFound(){
+  leave('', 'Not found - himitsu');
+  app.innerHTML=`<header class="bar">${site(U(''))}</header><p class="msg">This page does not exist. <a data-link href="${U('')}">Back to the gallery</a>.</p>`;
+}
+
+/* ---------- album viewer + slideshow ---------- */
+const DELAY=3;   /* seconds */
+let playing=false, timer=0;
+function arm(){
+  clearTimeout(timer);
+  if(playing&&cur) timer=setTimeout(()=>step(1),DELAY*1000);
+}
+function setPlaying(v){
+  playing=v;
+  const b=document.getElementById('play');
+  if(b){b.textContent=v?'Pause slideshow':'Start slideshow'; b.setAttribute('aria-pressed',v);}
+  if(v) arm(); else clearTimeout(timer);
+}
+
+function album(num,photo){
+  const a=albums[num-1];
+  if(!a) return notFound();
+  if(cur!==a){
+    leave('home',a.title+' - himitsu');
+    cur=a;
+    const homePage=Math.floor((num-1)/perPage())+1;
+    app.innerHTML=`<header class="bar tight">${site(U(homePage>1?'page/'+homePage:''))}</header>
+<div class="albumline"><b>${esc(a.title)}</b><span id="count"></span></div>
+<main class="photo"><div class="frame"><button class="nav prev" aria-label="Previous photo"><svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg></button><img id="photo" alt=""><button class="nav next" aria-label="Next photo"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></svg></button></div><div class="ctl"><button id="play" type="button" aria-pressed="false">Start slideshow</button></div></main>`;
+    app.querySelector('.prev').onclick=()=>step(-1);
+    app.querySelector('.next').onclick=()=>step(1);
+    const img=document.getElementById('photo'), play=document.getElementById('play');
+    img.onload=img.onerror=()=>{if(playing) arm();};
+    play.onclick=()=>setPlaying(!playing);
+    if(a.photos.length<2) play.disabled=true;
+  }
+  showPhoto(photo-1);
+}
+
+function showPhoto(i){
+  clearTimeout(timer);
+  const len=cur.photos.length;
+  idx=(i%len+len)%len;
+  const img=document.getElementById('photo');
+  img.alt=cur.title+', photo '+(idx+1);
+  img.src=cur.photos[idx];
+  document.getElementById('count').textContent=(idx+1)+' of '+len;
+  history.replaceState(null,'',U('album/'+cur.n+'/'+(idx+1)));
+  scrollTo(0,0);
+  [idx+1,idx-1].forEach(j=>{new Image().src=cur.photos[(j%len+len)%len]});
+}
+const step=d=>cur&&showPhoto(idx+d);
+
+let pp=perPage(),rt;
+addEventListener('resize',()=>{
+  clearTimeout(rt);
+  rt=setTimeout(()=>{const n=perPage();if(n!==pp){pp=n;if(!cur&&albums.length&&document.querySelector('.covers'))route();}},150);
+});
+addEventListener('keydown',e=>{
+  if(!cur) return;
+  if(e.key==='ArrowRight') step(1);
+  else if(e.key==='ArrowLeft') step(-1);
+  else if(e.key==='Escape') go(U(''));
+  else if(e.key===' '&&e.target===document.body){e.preventDefault();setPlaying(!playing);}
+});
+
+/* swipe left/right on touch screens */
+let x0=null;
+addEventListener('touchstart',e=>{x0=e.touches[0].clientX},{passive:true});
+addEventListener('touchend',e=>{
+  if(x0===null||!cur) return;
+  const dx=e.changedTouches[0].clientX-x0; x0=null;
+  if(Math.abs(dx)>60) step(dx<0?1:-1);
+});
+init();
+</script>
+</body>
+</html>
